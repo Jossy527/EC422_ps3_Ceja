@@ -107,3 +107,81 @@ retail_ts |>
 #I decided to add the geom_smooth() to highlight the trend in sales to make the
 #the information clear and easier to observe.
 
+#Part 3: Data Transformations
+
+#3.1a.The seasonal swings do in fact get larger as the series grows, with spikes
+#and drops over the years. There is an upward increase over the sample series,
+#but it is not constant. It increases rapidly during the 1960s and early 1970s,
+#grows slower and almost flat from the mid-1970s to the late 1980s, and then
+#increases rapidly again during the 1990s.
+
+#3.1b.
+can_gas <- can_gas |>
+  mutate(log_volume = log(Volume))
+
+can_gas |> 
+  autoplot(log_volume) +
+  labs(
+    title = "Log of Canadian Gas Production",
+    x = "Month",
+    y = "Log(Volume)"
+  ) +
+  theme_minimal()
+#After taking the logs, the seasonal swings became more consistent in size over
+#time and it appears more uniform. The transformation made it smoother but it
+#didn't completely make it series linear and it still changes over time.
+#I think logs are a good idea for can_gas. Even though they did not make trend
+#perfectly linear, they did improve the series by making the seasonal swings
+#more constant. Being able to see the nonlinear behavior in growth in an easier
+#model does in fact help.
+
+#3.1c.
+can_gas <- can_gas |>
+  mutate(
+    growth_direct = 100 * difference(Volume) / lag(Volume),
+    growth_logdiff = 100 * difference(log_volume)
+  )
+
+can_gas |>
+  autoplot(growth_direct) +
+  labs(
+    title = "Month-over-Month Growth Rate in Canadian Gas Production",
+    x = "Month",
+    y = "Percent Growth"
+  ) +
+  theme_minimal()
+
+can_gas <- can_gas |>
+  mutate(
+    growth_gap = abs(growth_direct - growth_logdiff)
+    )
+
+can_gas |>
+  autoplot(growth_gap) +
+  labs(
+  title = "Growth Rate Difference Between Direct and Log-Difference",
+    x = "Month",
+    y = "Absolute Difference"
+  ) +
+  theme_minimal()
+#I think the log difference approximation is good since the absolute difference
+#is usually small, although there are some large gaps.
+
+#3.3
+retail_ts <- retail_ts |>
+  group_by_key() |>
+  mutate(growth_mom = 100 * difference(log(sales))) |>
+  ungroup()
+
+retail_ts |>
+  autoplot(growth_mom) +
+  labs(
+    title = "Month-over-Month Growth: SA vs. NSA Retail Sales",
+    x = NULL, y = "Growth rate (%)", color = NULL
+  ) +
+  theme_minimal() 
+#The NSA series is noisier with large positive and negative spikes throughout
+#the month-over-month growth rate. The SA series is much more narrow and ranges
+#around zero. The reason the NSA series is noisy is because it still contains
+#the seasonal patterns, similarly to what we observed in 2.7b.
+
