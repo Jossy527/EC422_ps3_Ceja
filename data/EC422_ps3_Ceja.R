@@ -68,3 +68,42 @@ can_gas_q |> autoplot(Volume)
 #each month;instead, a mean() would just give the "typical month" value. Yes, 
 #quarter series still shows seasonality because production differs between
 #quarters, meaning that seasonal patterns are still observable.
+
+retail_ts |> autoplot(sales)
+
+retail_ts |>
+  autoplot(sales) +
+  labs(
+    title = "U.S. Retail and Food Services Sales",
+    subtitle = "Seasonally adjusted vs. not seasonally adjusted",
+    x = NULL, y = "Millions of dollars", color = NULL
+  ) +
+  theme_minimal()
+
+#The NSA series shows a repeating seasonal pattern every year, in which in 
+#December sales spike and then drop every January. The SA series follows the 
+#same pattern because the adjustment does not change the movement in sales.
+#The SA series is in fact smoother than the NSA series, but it follows the same
+#behavior in the long-run.
+
+can_gas |> 
+  autoplot(Volume) +
+  labs(
+    title = "Canadian Gas Production",
+    x = "Month",
+    y = "Billions of cubic meters"
+  ) +
+  theme_minimal()
+
+retail_ts |>
+  autoplot(sales) +
+  geom_smooth(se = FALSE) +
+  labs(
+    title = "U.S. Retail and Food Services Sales with Trend Line",
+    subtitle = "Seasonally adjusted vs. not seasonally adjusted",
+    x = NULL, y = "Millions of dollars", color = NULL
+  ) +
+  theme_minimal()
+#I decided to add the geom_smooth() to highlight the trend in sales to make the
+#the information clear and easier to observe.
+
