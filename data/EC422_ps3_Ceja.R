@@ -26,3 +26,45 @@ retail_ts <- retail_raw_long |>
   as_tsibble(index = Month, key = series_id)
 head(retail_ts)
 has_gaps(retail_ts)
+
+head(canadian_gas)
+retail_ts
+
+key_vars(canadian_gas)
+index_var(canadian_gas)
+
+can_gas <- canadian_gas |>
+  select(Month, Volume)
+has_gaps(can_gas)
+head(can_gas)
+
+can_gas_recent <- can_gas |>
+  filter(Month >= yearmonth("1990 Jan"))
+head(can_gas_recent)
+
+can_gas_recent <- can_gas_recent |>
+  mutate(year    = year(Month),
+         month   = month(Month, label = TRUE),
+         quarter = quarter(Month))
+
+can_gas_recent |>
+  as_tibble() |>
+  group_by(month) |>
+  summarize(avg_volume = mean(Volume))
+
+can_gas_recent |>
+  mutate(next_month           = Month + 1,
+         same_month_last_year = Month - 12) |>
+  head()
+
+can_gas_q <- can_gas |>
+  filter(Month <= yearmonth("2004 Dec")) |>
+  index_by(Quarter = yearquarter(Month)) |>
+  summarize(Volume = sum(Volume))
+head(can_gas_q)
+can_gas_q |> autoplot(Volume) 
+
+#We sum() the monthly values because they represent the total amount produced 
+#each month;instead, a mean() would just give the "typical month" value. Yes, 
+#quarter series still shows seasonality because production differs between
+#quarters, meaning that seasonal patterns are still observable.
