@@ -299,4 +299,67 @@ can_gas_fit |>
   features(.innov, ljung_box, lag = 24)
 #The residuals do not appear to be white noise because they show a long-run 
 #pattern and a strong autocorrelation. The Ljung-Box test rejects the null
-#hypothesis of no autocorrelation at the 5% level.
+#hypothesis of no autocorrelation at the 5% level. 
+
+#Part 5 - A First Forecast Evaluation
+
+#5.1a
+gas_cv_fc <- can_gas |>
+  select(Month, Volume) |>
+  stretch_tsibble(.init = 240, .step = 1) |>
+  model(snaive = SNAIVE(Volume),
+        tslm   = TSLM(log(Volume) ~ trend() + season())) |>
+  forecast(h = 1)
+
+gas_cv_fc |>
+  accuracy(can_gas, measures = list(MAE = MAE, RMSE = RMSE))
+ 
+results_tbl <- tibble(
+  Model = c("SNAIVE", "TSLM"),
+  MAE = c(0.562, 4.010),
+  RMSE = c(0.702, 4.360)
+)
+
+results_tbl |> knitr::kable(digits = 3)
+#The first forecast evaluated is January 1980 and the last forecast evaluated
+#is March 2005. The SNAIVE model produces more accurate forecasts because it has
+#a lower MAE and RMSE than the TSLM model. Both metrics agree that the SNAIVE
+#model performs better than TSLM model.
+
+#5.2a.
+errs <- gas_cv_fc |>
+  as_tibble() |>
+  left_join(as_tibble(can_gas) |> select(Month, actual = Volume),
+            by = "Month") |>
+  mutate(e = actual - .mean) |>
+  select(Month, .model, e) |>
+  pivot_wider(names_from = .model, values_from = e) |>
+  na.omit()
+
+forecast::dm.test(errs$snaive, errs$tslm, h = 1, power = 1)
+#The DM statistic is -31.278 and the p-value is <2.2e-16. We reject the null
+#hypothesis that the two models are equally accurate and conclude that the
+#SNAIVE model performs better.
+
+#5.3a.
+gas_cv_fc_roll <- can_gas |>
+  select(Month, Volume) |>
+  slide_tsibble(.size = 240, .step = 1) |>
+  model(snaive = SNAIVE(Volume),
+        tslm   = TSLM(log(Volume) ~ trend() + season())) |>
+  forecast(h = 1)
+
+gas_cv_fc_roll |>
+  accuracy(can_gas, measures = list(MAE = MAE, RMSE = RMSE)) 
+  
+results_tbl2 <- tibble(
+  Model = c("SNAIVE", "TSLM"),
+  MAE = c(0.562, 2.090),
+  RMSE = c(0.702, 2.420)
+)
+
+results_tbl2 |> knitr::kable(digits = 3)
+#The TSLM model's accuracy changed more when switching to a rolling window. The
+#MAE and RMSE decreased for the TSLM model, while the SNAIVE model's accuracy
+#stayed basically the same. This makes sense because the fitted line trend from
+#part 4.4b did not fit the entire sample well.
